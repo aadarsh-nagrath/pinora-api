@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: image-gen-api
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: UPLOADTHING_TOKEN
+        value: eyJhcGlLZXkiOiJza19saXZlXzE5ZThmMDZiOTE5MmQwZTUxNDY5OThjNGFhMTk5OWNhYjc5YjI4ODgxYzVhYzUzNzVjYjNhZWJlYzM4YjFiZjMiLCJhcHBJZCI6InVjMXc4NmR5cTAiLCJyZWdpb25zIjpbInNlYTEiXX0=
