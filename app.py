@@ -143,6 +143,9 @@ def generate_perchance_image(prompt):
         cookies = latest_auth['cookies']
         user_key = latest_auth['userKey']
         
+        print(f"Using userKey: {user_key[:20]}...")
+        print(f"Using cookies: {list(cookies.keys())}")
+        
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
             'Referer': 'https://image-generation.perchance.org/embed',
@@ -166,13 +169,21 @@ def generate_perchance_image(prompt):
             'requestId': f'0.{time.time()}'
         }
         
+        print(f"Sending request to Perchance API...")
+        
         # Try up to 3 times if waiting for previous request
         for attempt in range(3):
             response = requests.post(generate_url, json=payload, cookies=cookies, headers=headers, timeout=30)
             
+            print(f"Response status: {response.status_code}")
+            print(f"Response text: {response.text[:500]}")
+            
             if response.status_code == 200:
                 data = response.json()
                 status = data.get('status')
+                
+                print(f"API status: {status}")
+                print(f"Full response: {json.dumps(data, indent=2)}")
                 
                 if status == 'waiting_for_prev_request_to_finish':
                     print(f"Waiting for previous request (attempt {attempt + 1}/3)...")
@@ -188,20 +199,29 @@ def generate_perchance_image(prompt):
                     download_url = f"https://image-generation.perchance.org/api/downloadTemporaryImage?imageId={image_id}"
                     image_response = requests.get(download_url, cookies=cookies, headers=headers, timeout=30)
                     
+                    print(f"Download status: {image_response.status_code}")
+                    
                     if image_response.status_code == 200:
+                        print(f"✓ Downloaded {len(image_response.content)} bytes")
                         return image_response.content
                     else:
-                        print(f"✗ Failed to download image")
+                        print(f"✗ Failed to download image: {image_response.text[:200]}")
                         return None
                 else:
                     print(f"✗ API error: {data.get('error', 'Unknown error')}")
+                    print(f"Full error response: {json.dumps(data, indent=2)}")
                     return None
+            else:
+                print(f"✗ HTTP error {response.status_code}: {response.text[:500]}")
+                return None
         
         print("✗ Max retries reached")
         return None
         
     except Exception as e:
         print(f"✗ Error generating image: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return None
 
 
