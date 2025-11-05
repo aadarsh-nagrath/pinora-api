@@ -3,11 +3,13 @@ import json
 import time
 import tempfile
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 import requests
 from upyloadthing import UTApi, UTApiOptions
 from datetime import datetime
 
 app = Flask(__name__)
+CORS(app)  # Enable CORS for all routes
 
 # Global storage for latest cookies and userKey
 latest_auth = {
@@ -38,8 +40,14 @@ def receive_cookies():
         if not data:
             return jsonify({'error': 'No data provided'}), 400
         
-        # Extract cookies and userKey from webhook data
-        webhook_data = data.get('data', {})
+        # Handle both formats: direct and wrapped in 'data'
+        # Direct format: {"cookies": {...}, "userKey": "..."}
+        # Wrapped format: {"data": {"cookies": {...}, "userKey": "..."}}
+        if 'data' in data:
+            webhook_data = data.get('data', {})
+        else:
+            webhook_data = data
+        
         new_cookies = webhook_data.get('cookies')
         new_userKey = webhook_data.get('userKey')
         new_timestamp = webhook_data.get('timestamp')
