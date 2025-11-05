@@ -4,7 +4,7 @@ import time
 import tempfile
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import requests
+from curl_cffi import requests as cf_requests
 from upyloadthing import UTApi, UTApiOptions
 from datetime import datetime
 
@@ -147,10 +147,19 @@ def generate_perchance_image(prompt):
         print(f"Using cookies: {list(cookies.keys())}")
         
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            'Referer': 'https://image-generation.perchance.org/embed',
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36',
+            'Accept': '*/*',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Referer': 'https://image-generation.perchance.org/',
             'Origin': 'https://image-generation.perchance.org',
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Sec-Fetch-Dest': 'empty',
+            'Sec-Fetch-Mode': 'cors',
+            'Sec-Fetch-Site': 'same-origin',
+            'Sec-Ch-Ua': '"Chromium";v="142", "Not A(Brand";v="99"',
+            'Sec-Ch-Ua-Mobile': '?0',
+            'Sec-Ch-Ua-Platform': '"macOS"'
         }
         
         # Generate image
@@ -173,7 +182,14 @@ def generate_perchance_image(prompt):
         
         # Try up to 3 times if waiting for previous request
         for attempt in range(3):
-            response = requests.post(generate_url, json=payload, cookies=cookies, headers=headers, timeout=30)
+            response = cf_requests.post(
+                generate_url, 
+                json=payload, 
+                cookies=cookies, 
+                headers=headers, 
+                timeout=30,
+                impersonate="chrome110"  # Bypass Cloudflare
+            )
             
             print(f"Response status: {response.status_code}")
             print(f"Response text: {response.text[:500]}")
@@ -197,7 +213,13 @@ def generate_perchance_image(prompt):
                     # Download the image
                     time.sleep(2)  # Wait for image to be ready
                     download_url = f"https://image-generation.perchance.org/api/downloadTemporaryImage?imageId={image_id}"
-                    image_response = requests.get(download_url, cookies=cookies, headers=headers, timeout=30)
+                    image_response = cf_requests.get(
+                        download_url, 
+                        cookies=cookies, 
+                        headers=headers, 
+                        timeout=30,
+                        impersonate="chrome110"
+                    )
                     
                     print(f"Download status: {image_response.status_code}")
                     
